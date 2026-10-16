@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+package-lock.json
+CHANGELOG.md
+
+# Generated contracts (ADR-0008)
+contracts/tsp-output
+contracts/generated
+
+# Auto-generated Hexlet check — must not be edited
+.github/workflows/hexlet-check.yml
