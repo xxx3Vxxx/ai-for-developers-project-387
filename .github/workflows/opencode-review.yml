@@ -4,6 +4,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 jobs:
   opencode-review:
+    if: ${{ !endsWith(github.event.pull_request.user.login, '[bot]') }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
