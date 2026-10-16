@@ -11,7 +11,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { createEventType, type EventType } from "../../api/event-types";
 import { admin } from "../../copy/admin";
@@ -74,6 +74,12 @@ export function NewEventTypeDrawer({
   });
   const [serverErrors, setServerErrors] = useState<Partial<Record<FieldName, string>>>({});
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  const [invalidAttempt, setInvalidAttempt] = useState(0);
+  // Mantine прокидывает `ref` на нативные input/textarea: нужен, чтобы по
+  // провале валидации увести фокус на первое невалидное поле (ADR-0016).
+  const titleRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const durationRef = useRef<HTMLInputElement>(null);
 
   // На узких экранах панель занимает всю ширину, на десктопе — `md` (ADR-0016).
   // У `Drawer` нет адаптивного `size`, поэтому ширину переключает Mantine-хук
@@ -98,12 +104,18 @@ export function NewEventTypeDrawer({
     serverErrors.durationMinutes ??
     (touched.durationMinutes ? durationValidation.message : undefined);
 
+  /** Есть ли хоть одна клиентская ошибка — суммарный алерт живёт, пока есть. */
+  const clientInvalid = Boolean(
+    titleValidation.message || descriptionValidation.message || durationValidation.message,
+  );
+
   /** Сбрасывает ввод и состояние формы — при закрытии и после успеха. */
   function reset() {
     setDraft(EMPTY_DRAFT);
     setTouched({ title: false, description: false, durationMinutes: false });
     setServerErrors({});
     setSubmitState({ status: "idle" });
+    setInvalidAttempt(0);
   }
 
   function close() {
@@ -121,7 +133,20 @@ export function NewEventTypeDrawer({
   async function submit() {
     // После попытки отправки показываем зеркальные подсказки у всех полей.
     setTouched({ title: true, description: true, durationMinutes: true });
-    if (titleValidation.message || descriptionValidation.message || durationValidation.message) {
+    const firstInvalid = [
+      { message: titleValidation.message, ref: titleRef },
+      { message: descriptionValidation.message, ref: descriptionRef },
+      { message: durationValidation.message, ref: durationRef },
+    ].find((field) => field.message !== undefined);
+    if (firstInvalid) {
+      // Клик обязан дать сигнал: суммарный алерт как результат действия
+      // (WCAG 2.2 SC 3.3.1). `key={invalidAttempt}` пере-монтирует узел —
+      // иначе скринридер не озвучит повторный клик «в пустоту».
+      setInvalidAttempt((value) => value + 1);
+      // Фокус — после рендера подписей ошибок, иначе поле будет прочитано без
+      // сообщения; `?.` guard: панель могла закрыться (Escape/оверлей) и поля
+      // уже размонтированы.
+      requestAnimationFrame(() => firstInvalid.ref.current?.focus());
       return;
     }
 
@@ -168,6 +193,7 @@ export function NewEventTypeDrawer({
     >
       <Stack gap="sm">
         <TextInput
+          ref={titleRef}
           label={admin.create.titleLabel}
           placeholder={admin.create.titlePlaceholder}
           withAsterisk
@@ -179,6 +205,7 @@ export function NewEventTypeDrawer({
           }
         />
         <Textarea
+          ref={descriptionRef}
           label={admin.create.descriptionLabel}
           placeholder={admin.create.descriptionPlaceholder}
           rows={3}
@@ -191,6 +218,7 @@ export function NewEventTypeDrawer({
           }
         />
         <NumberInput
+          ref={durationRef}
           label={admin.create.durationLabel}
           suffix={admin.create.durationSuffix}
           step={15}
@@ -202,6 +230,11 @@ export function NewEventTypeDrawer({
             changeField("durationMinutes", () => setDraft({ ...draft, durationMinutes: value }))
           }
         />
+        {invalidAttempt > 0 && clientInvalid ? (
+          <Alert key={invalidAttempt} role="alert" color="red">
+            <Text size="sm">{admin.create.error.invalidFields}</Text>
+          </Alert>
+        ) : null}
         {submitState.status === "unavailable" ? (
           <Alert role="alert" color="red" title={admin.create.error.title}>
             <Stack gap="sm" align="flex-start">

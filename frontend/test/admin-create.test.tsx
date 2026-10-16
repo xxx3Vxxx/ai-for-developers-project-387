@@ -151,6 +151,8 @@ describe("/admin: создание типа события", () => {
     await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
 
     expect(await screen.findByText(fieldMessages.title.REQUIRED)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(admin.create.error.invalidFields);
+    await waitFor(() => expect(within(drawer).getByLabelText(/Название/)).toHaveFocus());
     expect(api.POST).not.toHaveBeenCalled();
   });
 
@@ -162,7 +164,46 @@ describe("/admin: создание типа события", () => {
     await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
 
     expect(await screen.findByText(fieldMessages.durationMinutes.REQUIRED)).toBeInTheDocument();
+    // Первое невалидное поле — «Название» (пусто по умолчанию): фокус уходит на него.
+    await waitFor(() => expect(within(drawer).getByLabelText(/Название/)).toHaveFocus());
     expect(api.POST).not.toHaveBeenCalled();
+  });
+
+  it("по клику с невалидным полем даёт суммарный алерт и фокус на первое поле", async () => {
+    renderAdmin();
+    const { user, drawer } = await openDrawer();
+    await fillDrawer(user, drawer, 32);
+
+    await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(admin.create.error.invalidFields);
+    expect(
+      within(drawer).getByText(fieldMessages.durationMinutes.NOT_MULTIPLE),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(within(drawer).getByLabelText(/Длительность/)).toHaveFocus());
+    expect(api.POST).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: admin.create.drawerTitle })).toBeInTheDocument();
+
+    // Повторный клик молчать не должен: фокус снова уходит на невалидное поле.
+    await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
+    await waitFor(() => expect(within(drawer).getByLabelText(/Длительность/)).toHaveFocus());
+    expect(api.POST).not.toHaveBeenCalled();
+
+    // Исправление на 30 снимает суммарный алерт, а клик создаёт тип и закрывает панель.
+    api.POST.mockResolvedValue(mockResponse({ ...created, durationMinutes: 30 }));
+    const durationField = within(drawer).getByLabelText(/Длительность/);
+    await user.clear(durationField);
+    await user.type(durationField, "30");
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+
+    await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
+
+    expect(await screen.findByText(admin.create.success.title)).toBeInTheDocument();
+    expect(api.POST).toHaveBeenCalledWith("/api/event-types", {
+      body: { title: created.title, description: created.description, durationMinutes: 30 },
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("на недоступность сервиса показывает алерт с «Повторить», сохраняя ввод", async () => {
