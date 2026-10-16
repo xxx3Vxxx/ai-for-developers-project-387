@@ -14,6 +14,7 @@ interface ZonedParts {
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Дополняет число ведущими нулями до `length` разрядов. */
 function pad(value: number, length = 2): string {
   return String(value).padStart(length, "0");
 }
@@ -26,6 +27,10 @@ export function hhmmToMinutes(value: string): number {
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
+/**
+ * Кэш `Intl.DateTimeFormat` по часовым зонам: форматирование дорогое, зоны
+ * повторяются между запросами (ADR-0004).
+ */
 function formatter(timeZone: string): Intl.DateTimeFormat {
   let cached = formatters.get(timeZone);
   if (!cached) {
@@ -44,6 +49,7 @@ function formatter(timeZone: string): Intl.DateTimeFormat {
   return cached;
 }
 
+/** Разложить момент на «настенные» составляющие зоны сервиса через `Intl`. */
 function zonedParts(timeZone: string, instant: Date): ZonedParts {
   const parts = formatter(timeZone).formatToParts(instant);
   const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? "0");
