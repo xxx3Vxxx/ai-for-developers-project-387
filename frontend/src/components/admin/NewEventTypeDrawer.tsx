@@ -74,6 +74,9 @@ export function NewEventTypeDrawer({
   });
   const [serverErrors, setServerErrors] = useState<Partial<Record<FieldName, string>>>({});
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  // Счётчик провальных попыток отправки: ноль — суммарного алерта нет до
+  // первого клика, а каждый рост пере-монтирует узел, чтобы скринридер
+  // озвучил и повторный клик (WCAG 2.2 SC 3.3.1, ADR-0016).
   const [invalidAttempt, setInvalidAttempt] = useState(0);
   // Mantine прокидывает `ref` на нативные input/textarea: нужен, чтобы по
   // провале валидации увести фокус на первое невалидное поле (ADR-0016).
@@ -115,6 +118,8 @@ export function NewEventTypeDrawer({
     setTouched({ title: false, description: false, durationMinutes: false });
     setServerErrors({});
     setSubmitState({ status: "idle" });
+    // Новая сессия панели — чистая история анонсов: без сброса прошлый алерт
+    // показывался бы сразу при следующем открытии, до любой попытки отправки.
     setInvalidAttempt(0);
   }
 
@@ -133,6 +138,8 @@ export function NewEventTypeDrawer({
   async function submit() {
     // После попытки отправки показываем зеркальные подсказки у всех полей.
     setTouched({ title: true, description: true, durationMinutes: true });
+    // Порядок полей совпадает с порядком в форме: фокус уходит на верхнее
+    // невалидное поле, чтобы обход оставался логичным для клавиатурника.
     const firstInvalid = [
       { message: titleValidation.message, ref: titleRef },
       { message: descriptionValidation.message, ref: descriptionRef },
@@ -230,6 +237,9 @@ export function NewEventTypeDrawer({
             changeField("durationMinutes", () => setDraft({ ...draft, durationMinutes: value }))
           }
         />
+        {/* Суммарный анонс неудачной отправки: появляется только по клику
+            (invalidAttempt > 0) и живёт, пока есть клиентские ошибки, — гаснет,
+            как только владелец исправил поля, чтобы не висеть ложным сигналом. */}
         {invalidAttempt > 0 && clientInvalid ? (
           <Alert key={invalidAttempt} role="alert" color="red">
             <Text size="sm">{admin.create.error.invalidFields}</Text>

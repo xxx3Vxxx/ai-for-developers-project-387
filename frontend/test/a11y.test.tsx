@@ -293,6 +293,8 @@ describe("кабинет /admin", () => {
     await user.type(durationField, "32");
     await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
 
+    // Ждём алерт и фокус до снимка: скан должен ловить именно состояние
+    // провального клика, а не просто открытую панель без ошибок.
     await screen.findByRole("alert");
     await waitFor(() => expect(durationField).toHaveFocus());
 

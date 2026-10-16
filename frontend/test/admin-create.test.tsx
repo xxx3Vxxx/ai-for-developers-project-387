@@ -151,6 +151,7 @@ describe("/admin: создание типа события", () => {
     await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
 
     expect(await screen.findByText(fieldMessages.title.REQUIRED)).toBeInTheDocument();
+    // Сигнал по клику — не только подпись под полем, но и суммарный алерт.
     expect(await screen.findByRole("alert")).toHaveTextContent(admin.create.error.invalidFields);
     await waitFor(() => expect(within(drawer).getByLabelText(/Название/)).toHaveFocus());
     expect(api.POST).not.toHaveBeenCalled();
@@ -169,6 +170,9 @@ describe("/admin: создание типа события", () => {
     expect(api.POST).not.toHaveBeenCalled();
   });
 
+  // Регресс issue #4: раньше невалидный клик был «молчаливым» — панель не
+  // менялась, запрос не уходил, и владелец не понимал, что клик засчитан.
+  // Проверяем весь сценарий: алерт → повторный клик → исправление → успех.
   it("по клику с невалидным полем даёт суммарный алерт и фокус на первое поле", async () => {
     renderAdmin();
     const { user, drawer } = await openDrawer();
