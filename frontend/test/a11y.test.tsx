@@ -282,6 +282,25 @@ describe("кабинет /admin", () => {
     await expectNoA11yViolations(document.body);
   });
 
+  it("нет нарушений в панели с суммарной ошибкой валидации после клика", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin");
+    await user.click(await screen.findByRole("button", { name: admin.create.action }));
+    const drawer = await screen.findByRole("dialog", { name: admin.create.drawerTitle });
+    await user.type(within(drawer).getByLabelText(/Название/), "Демо-звонок");
+    const durationField = within(drawer).getByLabelText(/Длительность/);
+    await user.clear(durationField);
+    await user.type(durationField, "32");
+    await user.click(within(drawer).getByRole("button", { name: admin.create.submit }));
+
+    // Ждём алерт и фокус до снимка: скан должен ловить именно состояние
+    // провального клика, а не просто открытую панель без ошибок.
+    await screen.findByRole("alert");
+    await waitFor(() => expect(durationField).toHaveFocus());
+
+    await expectNoA11yViolations(document.body);
+  });
+
   it("держит фокус в панели, закрывает по Escape и возвращает фокус на кнопку", async () => {
     const user = userEvent.setup();
     renderApp("/admin");
