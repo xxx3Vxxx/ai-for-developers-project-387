@@ -35,6 +35,7 @@ export function createBooking(db: Db, input: CreateBookingInput): CreateBookingR
       return { status: "conflict" };
     }
     const info = insert.run(value);
+    // TODO: отправить гостю подтверждение брони по почте
     return { status: "created", id: Number(info.lastInsertRowid) };
   });
 
