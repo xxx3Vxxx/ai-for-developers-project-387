@@ -71,6 +71,9 @@
 │   ├── ci.yml                 # npm ci → lint → typecheck → test → build
 │   ├── release-please.yml     # релизы по Conventional Commits
 │   ├── opencode.yml           # ассистент по комментариям вида `/oc ...`
+│   ├── opencode-review.yml    # AI-ревью каждого PR
+│   ├── opencode-triage.yml    # AI-триаж новых issue
+│   ├── opencode-todo.yml      # еженедельный скан TODO/FIXME, отчёт issue
 │   └── hexlet-check.yml       # автопроверка Хекслета — НЕ ТРОГАТЬ
 ├── eslint.config.mjs, .prettierrc, tsconfig.base.json
 └── Makefile                   # удобные команды (make help)
