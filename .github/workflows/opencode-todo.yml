@@ -1,0 +1,37 @@
+name: OpenCode TODO Scan
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # каждый понедельник в 09:00 UTC
+  workflow_dispatch: # ручной запуск для отладки
+
+jobs:
+  opencode-todo-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run opencode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/qwen3.8-flash
+          prompt: >-
+            Find all TODO and FIXME comments in this codebase, excluding
+            node_modules, dist, build output and generated artifacts
+            (contracts/tsp-output, contracts/generated). For each occurrence
+            report the file path, line number and comment text, grouped by
+            file, and start with a summary count. Then create a single GitHub
+            issue titled "Еженедельный отчёт: TODO/FIXME в кодовой базе" with
+            the full report as the body (in Russian). Do not modify any files
+            or create any commits.
