@@ -2,11 +2,14 @@ name: OpenCode TODO Scan
 
 on:
   schedule:
-    - cron: '0 9 * * 1' # every Monday 09:00 UTC
+    - cron: "0 9 * * 1" # every Monday 09:00 UTC
   workflow_dispatch: # manual run for debugging
 
 jobs:
   opencode-todo-scan:
+    # Защита от запусков от имени бота или самого приложения; расписание и
+    # workflow_dispatch от пользователя проходят (actor у них — человек).
+    if: ${{ !endsWith(github.actor, '[bot]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

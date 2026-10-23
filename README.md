@@ -156,9 +156,13 @@ make docker-run              # docker run --rm -p 3000:3000 -v calendar-data:/ap
   `github.event.issue.user.type != 'Bot'` (issue). Тип `Bot` в GitHub API
   получают и сервисные аккаунты (`github-actions[bot]`, `release-please[bot]`),
   и GitHub-приложения, включая `opencode-agent[bot]`, — так агент не реагирует
-  на собственные ответы и зацикливание исключено. В `opencode-todo.yml` фильтр
-  не нужен: он стартует по расписанию и вручную, пользовательских событий
-  не принимает.
+  на собственные ответы и зацикливание исключено.
+- `opencode-todo.yml` стартует по расписанию и вручную, пользовательских
+  событий не принимает, поэтому фильтр по автору события ему не подходит.
+  Вместо него стоит проверка `if: ${{ !endsWith(github.actor, '[bot]') }}`:
+  запуски по расписанию и `workflow_dispatch` от пользователя проходят
+  (`actor` у них — человек), а попытка запуска от бота или от самого
+  приложения (логин вида `... [bot]`) отсекается.
 
 ### Кто может звать агента
 
@@ -174,12 +178,12 @@ make docker-run              # docker run --rm -p 3000:3000 -v calendar-data:/ap
 Права выданы отдельно каждому воркфлоу; запись через `GITHUB_TOKEN` разрешена
 только там, где агент создаёт задачи:
 
-| Воркфлоу              | permissions                                                                | Почему                                                                                                                           |
-| --------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `opencode.yml`        | `id-token: write`, `contents: read`, `pull-requests: read`, `issues: read` | ответы, ветки и PR агент пишет от имени GitHub-приложения OpenCode (обмен по OIDC — `id-token`), токену воркфлоу запись не нужна |
-| `opencode-review.yml` | `id-token: write`, `contents: read`, `pull-requests: read`, `issues: read` | ревью-комментарии пишет приложение; воркфлоу только читает                                                                       |
-| `opencode-triage.yml` | `id-token: write`, `contents: read`                                        | комментарий к issue пишет приложение; запись `GITHUB_TOKEN` не требуется                                                         |
-| `opencode-todo.yml`   | `contents: read`, `issues: write`                                          | работает в режиме `use_github_token` и сам создаёт issue-отчёт; `id-token` убран — OIDC-обмен в этом режиме не происходит        |
+| Воркфлоу              | permissions                                                                | Почему                                                                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `opencode.yml`        | `id-token: write`, `contents: read`, `pull-requests: read`, `issues: read` | ответы, ветки и PR агент пишет от имени GitHub-приложения OpenCode (обмен по OIDC — `id-token`), токену воркфлоу запись не нужна                       |
+| `opencode-review.yml` | `contents: read`, `pull-requests: write`, `issues: write`                  | работает в режиме `use_github_token` и сам публикует ревью-комментарий через `GITHUB_TOKEN`; `id-token` убран — OIDC-обмен в этом режиме не происходит |
+| `opencode-triage.yml` | `id-token: write`, `contents: read`                                        | комментарий к issue пишет приложение; запись `GITHUB_TOKEN` не требуется                                                                               |
+| `opencode-todo.yml`   | `contents: read`, `issues: write`                                          | работает в режиме `use_github_token` и сам создаёт issue-отчёт; `id-token` убран — OIDC-обмен в этом режиме не происходит                              |
 
 ### Share
 
