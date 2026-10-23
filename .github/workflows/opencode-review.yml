@@ -30,3 +30,4 @@ jobs:
             - Find bugs and risky changes
             - Check readability and maintainability
             - Leave actionable review comments
+            Do not modify any files or create any commits.
