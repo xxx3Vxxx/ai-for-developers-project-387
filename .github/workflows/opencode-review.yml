@@ -4,7 +4,9 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 jobs:
   opencode-review:
-    if: ${{ github.event.pull_request.user.type != 'Bot' }}
+    # Только свои ветки: у PR из форка GITHUB_TOKEN read-only, и запись
+    # ревью-комментария через use_github_token упала бы с 403.
+    if: ${{ github.event.pull_request.user.type != 'Bot' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
