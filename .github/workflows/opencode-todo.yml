@@ -7,9 +7,10 @@ on:
 
 jobs:
   opencode-todo-scan:
-    # Защита от запусков от имени бота или самого приложения; расписание и
-    # workflow_dispatch от пользователя проходят (actor у них — человек).
-    if: ${{ !endsWith(github.actor, '[bot]') }}
+    # Отсекаем запуски от имени бота или самого приложения. Расписание
+    # исключено намеренно: его actor не гарантированно человек, а обычный
+    # недельный прогон должен продолжаться.
+    if: ${{ github.event_name == 'schedule' || !endsWith(github.actor, '[bot]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
