@@ -138,6 +138,12 @@ release-please (CHANGELOG и версия).
 
 Пример: `feat(backend): add booking endpoint`
 
+Формат обязателен и для коммитов, которые создаёт агент (в том числе правки
+по команде `/oc` в `.github/workflows/opencode.yml`). Свободный текст вроде
+«Комментарий добавлен, проверки зелёные.» (коммит
+[`5224cbb`](https://github.com/xxx3Vxxx/ai-for-developers-project-387/commit/5224cbb))
+недопустим: тип выбирается по смыслу изменения, а не по факту его наличия.
+
 ## CI и ограничения
 
 CI (`.github/workflows/ci.yml`) запускается на каждый push и pull request:

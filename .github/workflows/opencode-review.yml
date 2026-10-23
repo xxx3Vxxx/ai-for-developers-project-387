@@ -4,13 +4,14 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 jobs:
   opencode-review:
-    if: ${{ github.event.pull_request.user.type != 'Bot' }}
+    # Только свои ветки: у PR из форка GITHUB_TOKEN read-only, и запись
+    # ревью-комментария через use_github_token упала бы с 403.
+    if: ${{ github.event.pull_request.user.type != 'Bot' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -20,10 +21,13 @@ jobs:
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: opencode/qwen3.8-flash
+          use_github_token: true
           prompt: |
             Review this pull request:
             - Find bugs and risky changes
             - Check readability and maintainability
             - Leave actionable review comments
+            Do not modify any files or create any commits.
